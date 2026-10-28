@@ -273,7 +273,7 @@ class MainActivity : Activity() {
               function clean(s){return (s||'').replace(/\s+/g,' ').trim();}
               var mode = '${mode}';
               var links=[].slice.call(document.querySelectorAll('a')).map(function(a){
-                return {label:clean(a.innerText||a.getAttribute('aria-label')||a.title),url:a.href};
+                return {label:clean(a.innerText||a.getAttribute('aria-label')||a.title),url:(new URL(a.href)).pathname};
               }).filter(function(a){return a.label.length>0;});
               var relevant=links.filter(function(a){
                 return mode==='wifi' ? /wifi|wireless|wlan|ssid|شبك|لاسلك|وا.?فا.?ي/i.test(a.label+' '+a.url) :
@@ -283,9 +283,9 @@ class MainActivity : Activity() {
                 var fields=[].slice.call(f.querySelectorAll('input,select,textarea,button')).map(function(e){
                   var labels=[].slice.call(e.labels||[]).map(function(l){return clean(l.innerText)}).join('/');
                   var nearby=clean(e.parentElement?e.parentElement.innerText:'').slice(0,100);
-                  return e.tagName+' name='+e.name+' id='+e.id+' type='+(e.type||'')+' label='+labels+' value='+(e.type==='password'?'[hidden]':(e.value||''))+' text='+clean(e.innerText)+' context='+nearby;
+                  return e.tagName+' name='+e.name+' id='+e.id+' type='+(e.type||'')+' placeholder='+(e.placeholder||'')+' label='+labels;
                 });
-                return 'FORM '+i+' action='+f.action+' method='+f.method+'\n'+fields.join('\n');
+                return 'FORM '+i+' action='+(new URL(f.action, location.href)).pathname+' method='+f.method+'\n'+fields.join('\n');
               });
               var inputs=[].slice.call(document.querySelectorAll('input,select,textarea,button')).map(function(e){
                 var s=(e.name+' '+e.id+' '+e.type+' '+e.placeholder+' '+e.getAttribute('aria-label')+' '+(e.parentElement?e.parentElement.innerText:''));
@@ -293,7 +293,7 @@ class MainActivity : Activity() {
                 if(mode==='devices' && /device|client|host|mac|block|filter|disconnect|حظر|جهاز|متصل|عنوان/i.test(s)) return e.tagName+' name='+e.name+' id='+e.id+' type='+(e.type||'')+' placeholder='+e.placeholder;
                 return null;
               }).filter(Boolean).slice(0,80);
-              return 'MODE: '+mode+'\nTITLE: '+document.title+'\nURL: '+location.href+'\nMATCHING LINKS:\n'+relevant.join('\n')+'\nMATCHING FIELDS:\n'+inputs.join('\n')+'\nFORMS:\n'+forms.join('\n')+'\nVISIBLE TEXT:\n'+clean(document.body?document.body.innerText:'').slice(0,2500);
+              return 'MODE: '+mode+'\nTITLE: '+document.title+'\nURL: '+location.href+'\nMATCHING LINKS:\n'+relevant.join('\n')+'\nMATCHING FIELDS:\n'+inputs.join('\n')+'\nFORMS:\n'+forms.join('\n')+'\nHEADINGS:\n'+[].slice.call(document.querySelectorAll('h1,h2,h3,[role=heading]')).map(function(e){return clean(e.innerText)}).filter(Boolean).slice(0,30).join('\n');
             })()
         """.trimIndent()
         wv.evaluateJavascript("JSON.stringify($script)") { result ->
