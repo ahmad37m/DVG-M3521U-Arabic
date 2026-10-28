@@ -162,24 +162,39 @@ class MainActivity : Activity() {
         wv.loadUrl(routerUrl)
     }
 
-    private fun inspectPage() {
+    private fun inspectPage(mode: String = "all") {
         val wv = webView ?: return
         val script = """
             (function(){
-              function clean(s){return (s||'').replace(/\\s+/g,' ').trim();}
-              var links=[].slice.call(document.querySelectorAll('a')).map(function(a){return clean(a.innerText)+' -> '+a.href;}).filter(function(x){return x.length>3;}).slice(0,100);
+              function clean(s){return (s||'').replace(/\s+/g,' ').trim();}
+              var mode = '${mode}';
+              var links=[].slice.call(document.querySelectorAll('a')).map(function(a){
+                return {label:clean(a.innerText||a.getAttribute('aria-label')||a.title),url:a.href};
+              }).filter(function(a){return a.label.length>0;});
+              var relevant=links.filter(function(a){
+                return mode==='wifi' ? /wifi|wireless|wlan|ssid|شبك|لاسلك|وا.?فا.?ي/i.test(a.label+' '+a.url) :
+                       mode==='devices' ? /device|client|host|station|mac|connected|wireless|شبك|أجهز|متصل|عميل|حظر|block|filter/i.test(a.label+' '+a.url) : true;
+              }).slice(0,80).map(function(a){return a.label+' -> '+a.url;});
               var forms=[].slice.call(document.forms).map(function(f,i){
                 var fields=[].slice.call(f.querySelectorAll('input,select,textarea,button')).map(function(e){
-                  return (e.tagName+' name='+e.name+' id='+e.id+' type='+(e.type||'')+' value='+(e.type==='password'?'[hidden]':(e.value||''))+' text='+clean(e.innerText)).slice(0,220);
+                  var labels=[].slice.call(e.labels||[]).map(function(l){return clean(l.innerText)}).join('/');
+                  var nearby=clean(e.parentElement?e.parentElement.innerText:'').slice(0,100);
+                  return e.tagName+' name='+e.name+' id='+e.id+' type='+(e.type||'')+' label='+labels+' value='+(e.type==='password'?'[hidden]':(e.value||''))+' text='+clean(e.innerText)+' context='+nearby;
                 });
-                return 'FORM '+i+' action='+f.action+' method='+f.method+'\\n'+fields.join('\\n');
+                return 'FORM '+i+' action='+f.action+' method='+f.method+'\n'+fields.join('\n');
               });
-              return 'TITLE: '+document.title+'\\nURL: '+location.href+'\\nLINKS:\\n'+links.join('\\n')+'\\nFORMS:\\n'+forms.join('\\n')+'\\nVISIBLE TEXT:\\n'+clean(document.body?document.body.innerText:'').slice(0,3500);
+              var inputs=[].slice.call(document.querySelectorAll('input,select,textarea,button')).map(function(e){
+                var s=(e.name+' '+e.id+' '+e.type+' '+e.placeholder+' '+e.getAttribute('aria-label')+' '+(e.parentElement?e.parentElement.innerText:''));
+                if(mode==='wifi' && /ssid|wireless|wifi|wlan|password|passphrase|wpa|شبك|كلمة المرور|مفتاح/i.test(s)) return e.tagName+' name='+e.name+' id='+e.id+' type='+(e.type||'')+' placeholder='+e.placeholder;
+                if(mode==='devices' && /device|client|host|mac|block|filter|disconnect|حظر|جهاز|متصل|عنوان/i.test(s)) return e.tagName+' name='+e.name+' id='+e.id+' type='+(e.type||'')+' placeholder='+e.placeholder;
+                return null;
+              }).filter(Boolean).slice(0,80);
+              return 'MODE: '+mode+'\nTITLE: '+document.title+'\nURL: '+location.href+'\nMATCHING LINKS:\n'+relevant.join('\n')+'\nMATCHING FIELDS:\n'+inputs.join('\n')+'\nFORMS:\n'+forms.join('\n')+'\nVISIBLE TEXT:\n'+clean(document.body?document.body.innerText:'').slice(0,2500);
             })()
         """.trimIndent()
         wv.evaluateJavascript("JSON.stringify($script)") { result ->
             val report = try {
-                org.json.JSONTokener(result ?: "\"\"").nextValue().toString()
+                org.json.JSONTokener(result ?: "\\"\\"").nextValue().toString()
             } catch (_: Exception) { result ?: "لم تُقرأ الصفحة" }
             showReport(report)
         }
