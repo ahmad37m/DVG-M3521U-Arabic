@@ -31,11 +31,6 @@ class MainActivity : Activity() {
     private var webView: WebView? = null
     private var pageTitle: TextView? = null
     private var content: LinearLayout? = null
-    private var usernameField: EditText? = null
-    private var passwordField: EditText? = null
-    private var pendingUsername = ""
-    private var pendingPassword = ""
-    private var loginAttempted = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -114,45 +109,10 @@ class MainActivity : Activity() {
         })
         body.addView(text("أقسام التحكم", 19f, navy, true))
         body.addView(text("افتح لوحة المودم وسجّل الدخول. هذه الأزرار تفتح واجهة المودم الحقيقية؛ نربط عناصر التحكم المباشرة بعد تحديد صفحاتها وطلبات الحفظ الفعلية.", 13f, Color.DKGRAY))
-        body.addView(text("تسجيل الدخول إلى المودم", 19f, navy, true))
-        body.addView(text("أدخل بيانات دخول صفحة الإدارة المحلية. لا تُحفظ هذه البيانات في التطبيق.", 13f, Color.DKGRAY))
-        val loginCard = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(14), dp(10), dp(14), dp(10))
-            setBackgroundColor(Color.WHITE)
-        }
-        usernameField = EditText(this).apply {
-            hint = "اسم المستخدم"
-            setSingleLine(true)
-            textDirection = View.TEXT_DIRECTION_LTR
-            setText("admin")
-        }
-        passwordField = EditText(this).apply {
-            hint = "كلمة مرور الإدارة"
-            setSingleLine(true)
-            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
-            textDirection = View.TEXT_DIRECTION_LTR
-        }
-        loginCard.addView(usernameField)
-        loginCard.addView(passwordField)
-        loginCard.addView(button("تسجيل الدخول") {
-            val user = usernameField?.text?.toString()?.trim().orEmpty()
-            val pass = passwordField?.text?.toString().orEmpty()
-            if (user.isBlank() || pass.isBlank()) {
-                AlertDialog.Builder(this).setTitle("بيانات ناقصة")
-                    .setMessage("أدخل اسم المستخدم وكلمة المرور أولًا.")
-                    .setPositiveButton("حسنًا", null).show()
-            } else {
-                pendingUsername = user
-                pendingPassword = pass
-                loginAttempted = true
-                openRouter("لوحة إدارة المودم")
-            }
-        })
-        body.addView(loginCard, LinearLayout.LayoutParams(-1, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-            topMargin = dp(8)
-            bottomMargin = dp(12)
-        })
+        body.addView(text("الدخول إلى لوحة المودم", 19f, navy, true))
+        body.addView(text("افتح صفحة الإدارة المحلية وأدخل بيانات الدخول داخل صفحة المودم نفسها عند ظهورها. التطبيق لا يطلب منك حفظ كلمة المرور.", 13f, Color.DKGRAY))
+        body.addView(button("فتح لوحة الإدارة") { openRouter("لوحة إدارة المودم") })
+        body.addView(text("تنبيه: عنوان المودم يستخدم HTTP المحلي غير المشفّر. استخدم التطبيق وأنت متصل بشبكتك المنزلية فقط.", 13f, Color.rgb(130, 65, 15)))
         addSectionCard(body, "📶  إعدادات Wi‑Fi", "بعد تسجيل الدخول، افتح صفحة Wi-Fi من قائمة المودم") { openRouter("إعدادات Wi‑Fi") }
         addSectionCard(body, "👥  الأجهزة المتصلة", "بعد تسجيل الدخول، افتح قائمة الأجهزة من واجهة المودم") { openRouter("الأجهزة المتصلة") }
         body.addView(text("لن يُغيّر التطبيق أي إعداد دون ضغطك على إجراء الحفظ أو الحظر داخل صفحة المودم.", 13f, Color.rgb(130, 65, 15)))
@@ -197,9 +157,24 @@ class MainActivity : Activity() {
         wv.settings.javaScriptEnabled = true
         wv.settings.domStorageEnabled = true
         wv.settings.loadsImagesAutomatically = true
+        wv.settings.allowFileAccess = false
+        wv.settings.allowContentAccess = false
+        wv.settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
         wv.webChromeClient = WebChromeClient()
         wv.webViewClient = object : WebViewClient() {
-            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean = false
+            override fun shouldOverrideUrlLoading(
+                view: WebView?,
+                request: android.webkit.WebResourceRequest?
+            ): Boolean {
+                val uri = request?.url ?: return true
+                val isRouterPage = uri.host == "192.168.1.1" &&
+                    (uri.scheme == "http" || uri.scheme == "https")
+                if (!isRouterPage) {
+                    Toast.makeText(this@MainActivity, "تم منع فتح رابط خارج صفحة المودم المحلية.", Toast.LENGTH_LONG).show()
+                    return true
+                }
+                return false
+            }
 
             override fun onReceivedHttpAuthRequest(
                 view: WebView?,
@@ -207,6 +182,11 @@ class MainActivity : Activity() {
                 host: String,
                 realm: String
             ) {
+                if (host != "192.168.1.1") {
+                    handler.cancel()
+                    Toast.makeText(this@MainActivity, "تم إلغاء طلب مصادقة من مضيف غير معروف.", Toast.LENGTH_LONG).show()
+                    return
+                }
                 val username = EditText(this@MainActivity).apply {
                     hint = "اسم المستخدم"
                     setSingleLine(true)
