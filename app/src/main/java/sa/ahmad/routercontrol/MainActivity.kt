@@ -19,6 +19,9 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.app.AlertDialog
+import android.webkit.HttpAuthHandler
+import android.widget.EditText
+import android.widget.Toast
 
 class MainActivity : Activity() {
     private val routerUrl = "http://192.168.1.1/"
@@ -156,6 +159,57 @@ class MainActivity : Activity() {
         wv.webChromeClient = WebChromeClient()
         wv.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean = false
+
+            override fun onReceivedHttpAuthRequest(
+                view: WebView?,
+                handler: HttpAuthHandler,
+                host: String,
+                realm: String
+            ) {
+                val username = EditText(this@MainActivity).apply {
+                    hint = "اسم المستخدم"
+                    singleLine = true
+                }
+                val password = EditText(this@MainActivity).apply {
+                    hint = "كلمة المرور"
+                    singleLine = true
+                    inputType = android.text.InputType.TYPE_CLASS_TEXT or
+                        android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+                }
+                val box = LinearLayout(this@MainActivity).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(dp(22), dp(8), dp(22), dp(4))
+                    addView(username)
+                    addView(password)
+                }
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle("تسجيل الدخول إلى المودم")
+                    .setMessage("أدخل بيانات دخول صفحة الإدارة المحلية.")
+                    .setView(box)
+                    .setPositiveButton("دخول") { _, _ ->
+                        val user = username.text.toString()
+                        val pass = password.text.toString()
+                        if (user.isBlank() || pass.isBlank()) {
+                            Toast.makeText(this@MainActivity, "أدخل اسم المستخدم وكلمة المرور", Toast.LENGTH_SHORT).show()
+                            handler.cancel()
+                        } else {
+                            handler.proceed(user, pass)
+                        }
+                    }
+                    .setNegativeButton("إلغاء") { _, _ -> handler.cancel() }
+                    .setOnCancelListener { handler.cancel() }
+                    .show()
+            }
+
+            override fun onReceivedError(
+                view: WebView?,
+                request: android.webkit.WebResourceRequest?,
+                error: android.webkit.WebResourceError?
+            ) {
+                if (request?.isForMainFrame == true) {
+                    Toast.makeText(this@MainActivity, "تعذر فتح صفحة المودم. تأكد من الاتصال بشبكته وعنوان 192.168.1.1", Toast.LENGTH_LONG).show()
+                }
+            }
         }
         root.addView(wv, LinearLayout.LayoutParams(-1, 0, 1f))
         setContentView(root)
