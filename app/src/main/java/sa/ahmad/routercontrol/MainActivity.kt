@@ -143,7 +143,9 @@ class MainActivity : Activity() {
             LinearLayout.LayoutParams(0, dp(46), 1f))
         tools.addView(button("تحديث") { webView?.reload() },
             LinearLayout.LayoutParams(0, dp(46), 1f))
-        tools.addView(button("فحص الصفحة") { inspectPage() },
+        tools.addView(button("فحص Wi-Fi") { inspectPage("wifi") },
+            LinearLayout.LayoutParams(0, dp(46), 1f))
+        tools.addView(button("فحص الأجهزة") { inspectPage("devices") },
             LinearLayout.LayoutParams(0, dp(46), 1f))
         root.addView(tools)
         val wv = WebView(this)
