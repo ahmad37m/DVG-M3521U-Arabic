@@ -194,7 +194,7 @@ class MainActivity : Activity() {
         """.trimIndent()
         wv.evaluateJavascript("JSON.stringify($script)") { result ->
             val report = try {
-                org.json.JSONTokener(result ?: "\\u0022\\u0022").nextValue().toString()
+                result?.let { org.json.JSONTokener(it).nextValue().toString() } ?: "لم تُقرأ الصفحة"
             } catch (_: Exception) { result ?: "لم تُقرأ الصفحة" }
             showReport(report)
         }
