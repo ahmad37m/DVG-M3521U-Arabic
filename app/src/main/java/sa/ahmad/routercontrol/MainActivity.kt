@@ -21,7 +21,6 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.app.AlertDialog
 import android.webkit.HttpAuthHandler
-import android.widget.EditText
 import android.widget.Toast
 
 class MainActivity : Activity() {
@@ -124,13 +123,13 @@ class MainActivity : Activity() {
         }
         usernameField = EditText(this).apply {
             hint = "اسم المستخدم"
-            singleLine = true
+            setSingleLine(true)
             textDirection = View.TEXT_DIRECTION_LTR
             setText("admin")
         }
         passwordField = EditText(this).apply {
             hint = "كلمة مرور الإدارة"
-            singleLine = true
+            setSingleLine(true)
             inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
             textDirection = View.TEXT_DIRECTION_LTR
         }
@@ -210,11 +209,11 @@ class MainActivity : Activity() {
             ) {
                 val username = EditText(this@MainActivity).apply {
                     hint = "اسم المستخدم"
-                    singleLine = true
+                    setSingleLine(true)
                 }
                 val password = EditText(this@MainActivity).apply {
                     hint = "كلمة المرور"
-                    singleLine = true
+                    setSingleLine(true)
                     inputType = android.text.InputType.TYPE_CLASS_TEXT or
                         android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
                 }
