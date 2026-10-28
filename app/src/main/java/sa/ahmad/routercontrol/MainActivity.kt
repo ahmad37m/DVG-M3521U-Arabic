@@ -293,7 +293,7 @@ class MainActivity : Activity() {
                 if(mode==='devices' && /device|client|host|mac|block|filter|disconnect|حظر|جهاز|متصل|عنوان/i.test(s)) return e.tagName+' name='+e.name+' id='+e.id+' type='+(e.type||'')+' placeholder='+e.placeholder;
                 return null;
               }).filter(Boolean).slice(0,80);
-              return 'MODE: '+mode+'\nTITLE: '+document.title+'\nURL: '+location.href+'\nMATCHING LINKS:\n'+relevant.join('\n')+'\nMATCHING FIELDS:\n'+inputs.join('\n')+'\nFORMS:\n'+forms.join('\n')+'\nHEADINGS:\n'+[].slice.call(document.querySelectorAll('h1,h2,h3,[role=heading]')).map(function(e){return clean(e.innerText)}).filter(Boolean).slice(0,30).join('\n');
+              return 'MODE: '+mode+'\nTITLE: '+document.title+'\nURL: '+location.pathname+'\nMATCHING LINKS:\n'+relevant.join('\n')+'\nMATCHING FIELDS:\n'+inputs.join('\n')+'\nFORMS:\n'+forms.join('\n')+'\nHEADINGS:\n'+[].slice.call(document.querySelectorAll('h1,h2,h3,[role=heading]')).map(function(e){return clean(e.innerText)}).filter(Boolean).slice(0,30).join('\n');
             })()
         """.trimIndent()
         wv.evaluateJavascript("JSON.stringify($script)") { result ->
