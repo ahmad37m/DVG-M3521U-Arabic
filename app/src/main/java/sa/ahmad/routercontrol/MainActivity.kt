@@ -147,9 +147,9 @@ class MainActivity : Activity() {
             LinearLayout.LayoutParams(0, dp(46), 1f))
         tools.addView(button("تحديث") { webView?.reload() },
             LinearLayout.LayoutParams(0, dp(46), 1f))
-        tools.addView(button("فحص Wi-Fi") { inspectPage("wifi") },
+        tools.addView(button("فتح Wi-Fi") { openSection("wifi") },
             LinearLayout.LayoutParams(0, dp(46), 1f))
-        tools.addView(button("فحص الأجهزة") { inspectPage("devices") },
+        tools.addView(button("فتح الأجهزة") { openSection("devices") },
             LinearLayout.LayoutParams(0, dp(46), 1f))
         root.addView(tools)
         val wv = WebView(this)
@@ -235,6 +235,35 @@ class MainActivity : Activity() {
         root.addView(wv, LinearLayout.LayoutParams(-1, 0, 1f))
         setContentView(root)
         wv.loadUrl(routerUrl)
+    }
+
+    private fun openSection(mode: String) {
+        val wv = webView ?: return
+        val script = """
+            (function() {
+              var mode = '${mode}';
+              var pattern = mode === 'wifi'
+                ? /wifi|wireless|wlan|ssid|شبك|لاسلك|وا.?فا.?ي/i
+                : /device|client|host|station|mac|connected|شبك|أجهز|متصل|عميل|block|filter|حظر/i;
+              var links = [].slice.call(document.querySelectorAll('a'));
+              var link = links.find(function(a) {
+                var label = (a.innerText || a.getAttribute('aria-label') || a.title || '') + ' ' + a.href;
+                return pattern.test(label);
+              });
+              if (link) {
+                link.click();
+                return 'SECTION_LINK_FOUND';
+              }
+              return 'SECTION_LINK_NOT_FOUND';
+            })()
+        """.trimIndent()
+        wv.evaluateJavascript(script) { result ->
+            if (result?.contains("SECTION_LINK_FOUND") == true) {
+                Toast.makeText(this, "تم فتح رابط القسم داخل المودم.", Toast.LENGTH_SHORT).show()
+            } else {
+                inspectPage(mode)
+            }
+        }
     }
 
     private fun inspectPage(mode: String = "all") {
